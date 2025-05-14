@@ -1,10 +1,7 @@
 package parentPackage.soldier.inteaction;
 
-import parentPackage.Ability;
-import parentPackage.AbilityEffect;
-
-import java.util.Map;
+import parentPackage.ability.AbstractAbility;
 
 public interface Triggerable {
-    Map<AbilityEffect, Integer> triggerAbility(Ability ability);
+    void triggerAbility(AbstractAbility ability);
 }

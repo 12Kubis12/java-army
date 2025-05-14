@@ -13,7 +13,7 @@ public class ArmyHolder {
 
     public ArmyHolder() {
         this.armies = new ArrayList<>();
-        createArmies();
+        this.createArmies();
     }
 
     private void createArmies() {

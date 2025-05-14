@@ -1,5 +1,6 @@
 package parentPackage;
 
 public enum AbilityEffect {
-    DAMAGE, KILL, BLOCKED_DAMAGE, BLOCKED_KILL
+    INCREASE_DAMAGE, MULTIPLY_DAMAGE, KILL, BLOCKED_DAMAGE, BLOCKED_KILL
 }
+

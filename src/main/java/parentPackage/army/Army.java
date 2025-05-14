@@ -1,20 +1,19 @@
 package parentPackage.army;
 
-import parentPackage.Ability;
-import parentPackage.AbilityEffect;
 import parentPackage.Command;
+import parentPackage.ability.AbstractAbility;
 import parentPackage.soldier.inteaction.Defensive;
 import parentPackage.soldier.inteaction.Offensive;
 import parentPackage.soldier.Soldier;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 public class Army {
     private final String name;
     private final List<Soldier> soldiers;
-    private final List<Ability> availableAbilities;
+    private final List<AbstractAbility> availableAbilities;
     private int dealtDamagePerRound;
     private int dealtInstantKillsPerRound;
     private int blockedDamagePerRound;
@@ -76,26 +75,47 @@ public class Army {
         printHeader(Command.TRIGGER_SPECIAL_ABILITY.toString());
         System.out.println("Choose from available special abilities:");
         for (int i = 0; i < this.availableAbilities.size(); i++) {
-            System.out.println((i + 1) + " -> " + availableAbilities.get(i).toString());
+            AbstractAbility abstractAbility = availableAbilities.get(i);
+            System.out.print((i + 1) + " -> " + abstractAbility.toString());
+            switch (abstractAbility.getAbilityEffectName()) {
+                case INCREASE_DAMAGE, BLOCKED_DAMAGE ->
+                        System.out.print(" (value for each soldier with this ability is "
+                                + abstractAbility.getAbilityEffectValue() + ")");
+            }
+            System.out.println();
         }
         this.printFooter();
     }
 
     public void triggerAbility(int line) {
-        Ability ability = this.availableAbilities.get(line - 1);
-        this.printHeader(ability.toString());
+        AbstractAbility ability = this.availableAbilities.get(line - 1);
+        this.printHeader(ability.getClass().getSimpleName());
         for (Soldier soldier : this.soldiers) {
             if (soldier.getAbilities().contains(ability)) {
-                Map<AbilityEffect, Integer> abilitiesEffects = soldier.triggerAbility(ability);
-                this.dealtDamagePerRound += abilitiesEffects.get(AbilityEffect.DAMAGE);
-                this.dealtInstantKillsPerRound += abilitiesEffects.get(AbilityEffect.KILL);
-                this.blockedDamagePerRound += abilitiesEffects.get(AbilityEffect.BLOCKED_DAMAGE);
-                this.blockedInstantKillsPerRound += abilitiesEffects.get(AbilityEffect.BLOCKED_KILL);
-                soldier.removeAbility(ability);
+                soldier.triggerAbility(ability);
+                switch (ability.getAbilityEffectName()) {
+                    case INCREASE_DAMAGE:
+                        this.dealtDamagePerRound += soldier.getDamage() + ability.getAbilityEffectValue();
+                        break;
+                    case MULTIPLY_DAMAGE:
+                        this.dealtDamagePerRound += soldier.getDamage() * ability.getAbilityEffectValue();
+                        break;
+                    case KILL:
+                        this.dealtInstantKillsPerRound += ability.getAbilityEffectValue();
+                        break;
+                    case BLOCKED_DAMAGE:
+                        this.blockedDamagePerRound += ability.getAbilityEffectValue();
+                        break;
+                    case BLOCKED_KILL:
+                        this.blockedInstantKillsPerRound += ability.getAbilityEffectValue();
+                        this.dealtDamagePerRound += soldier.getDamage();
+                        break;
+                }
             }
         }
         this.printRoundProperties();
         this.printFooter();
+        this.availableAbilities.remove(ability);
     }
 
     private void printHeader(String word) {
@@ -112,14 +132,15 @@ public class Army {
     private void printRoundProperties() {
         System.out.println();
         StringBuilder notification = new StringBuilder(this.name);
-        if (this.dealtDamagePerRound > 0) {
-            notification.append(" dealt ").append(this.dealtDamagePerRound).append(" damage.");
-        } else if (this.dealtInstantKillsPerRound > 0) {
-            notification.append(" instantly killed ").append(this.dealtInstantKillsPerRound).append(" enemies.");
+        if (this.blockedInstantKillsPerRound > 0) {
+            notification.append(" blocked ").append(this.blockedInstantKillsPerRound)
+                    .append(" instant kills and dealt ").append(this.dealtDamagePerRound).append(" damage.");
         } else if (this.blockedDamagePerRound > 0) {
             notification.append(" blocked ").append(this.blockedDamagePerRound).append(" damage.");
-        } else if (this.blockedInstantKillsPerRound > 0) {
-            notification.append(" blocked ").append(this.blockedInstantKillsPerRound).append(" instant kills.");
+        } else if (this.dealtInstantKillsPerRound > 0) {
+            notification.append(" instantly killed ").append(this.dealtInstantKillsPerRound).append(" enemies.");
+        } else if (this.dealtDamagePerRound > 0) {
+            notification.append(" dealt ").append(this.dealtDamagePerRound).append(" damage.");
         }
         System.out.println(notification);
     }
@@ -127,16 +148,6 @@ public class Army {
     public void addSoldiers(Soldier soldier) {
         this.soldiers.add(soldier);
         this.updateAbilities();
-    }
-
-    public void updateAbilities() {
-        for (Soldier soldier : this.soldiers) {
-            for (Ability specialAbility : soldier.getAbilities()) {
-                if (!this.availableAbilities.contains(specialAbility)) {
-                    this.availableAbilities.add(specialAbility);
-                }
-            }
-        }
     }
 
     public void evaluateLosses(int kills, int damage) {
@@ -172,14 +183,22 @@ public class Army {
         this.updateAbilities();
     }
 
+    public void updateAbilities() {
+        for (Soldier soldier : this.soldiers) {
+            for (AbstractAbility specialAbility : soldier.getAbilities()) {
+                if (!this.availableAbilities.contains(specialAbility)) {
+                    this.availableAbilities.add(specialAbility);
+                }
+            }
+        }
+        availableAbilities.sort(Comparator.comparing(AbstractAbility::toString));
+    }
+
     public void resetRoundProperties() {
         this.dealtDamagePerRound = 0;
         this.dealtInstantKillsPerRound = 0;
         this.blockedDamagePerRound = 0;
         this.blockedInstantKillsPerRound = 0;
-        for (Soldier soldier : this.soldiers) {
-            soldier.resetAbilitiesEffects();
-        }
     }
 
     public List<Soldier> getSoldiers() {
@@ -196,5 +215,9 @@ public class Army {
 
     public int getDealtInstantKillsPerRound() {
         return dealtInstantKillsPerRound;
+    }
+
+    public List<AbstractAbility> getAvailableAbilities() {
+        return availableAbilities;
     }
 }

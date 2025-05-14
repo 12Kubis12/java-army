@@ -10,8 +10,10 @@ public class Fight {
     private final ArmyHolder armiesHolder = new ArmyHolder();
     private int round = 1;
     private int currentPlayer = 0;
+    private final String commandPrompt;
 
     public Fight() {
+        this.commandPrompt = createCommandOptions();
         reportAllArmies();
         this.startFight();
     }
@@ -26,7 +28,9 @@ public class Fight {
         printStartInfo();
         while (true) {
             System.out.println("Round: " + this.round);
-            String line = scanInput("Command", printCommandOptions());
+            String line = scanInput("Command",
+                    this.armiesHolder.getArmies().get(this.currentPlayer).getName()
+                            + " choose command (" + this.commandPrompt);
             if (line.equals(Command.TRIGGER_SPECIAL_ABILITY.getShortcut())) {
                 line = scanInput("Ability", "Write number corresponding to the ability:");
             }
@@ -45,9 +49,8 @@ public class Fight {
         }
     }
 
-    private String printCommandOptions() {
-        StringBuilder info = new StringBuilder(this.armiesHolder.getArmies().get(this.currentPlayer).getName()
-                + " choose command (");
+    private String createCommandOptions() {
+        StringBuilder info = new StringBuilder();
         Command[] commands = Command.values();
         for (int i = 0; i < commands.length; i++) {
             info.append(commands[i].toString()).append(" -> '").append(commands[i].getShortcut()).append("'");
@@ -80,13 +83,19 @@ public class Fight {
             try {
                 System.out.println(prompt);
                 line = this.scanner.nextLine().replaceAll("\\s", "").toUpperCase();
+                Army currenrArmy = this.armiesHolder.getArmies().get(this.currentPlayer);
                 if (line.equals("Q")) {
                     break;
                 } else if (scanType.equals("Command")) {
-                    this.armiesHolder.getArmies().get(this.currentPlayer).giveCommand(Command.getFromShortcut(line));
+                    if (currenrArmy.getAvailableAbilities().isEmpty()
+                            && line.equals(Command.TRIGGER_SPECIAL_ABILITY.getShortcut())) {
+                        System.out.println("You army used all available abilities, use different command!!!");
+                        continue;
+                    }
+                    currenrArmy.giveCommand(Command.getFromShortcut(line));
                     break;
                 } else if (scanType.equals("Ability")) {
-                    this.armiesHolder.getArmies().get(this.currentPlayer).triggerAbility(Integer.parseInt(line));
+                    currenrArmy.triggerAbility(Integer.parseInt(line));
                     break;
                 }
             } catch (Exception e) {
