@@ -1,6 +1,6 @@
 # Java Army ⚔️
 
-This is a console-based Java object-oriented programming (OOP) application designed to simulate a simple army system consisting of different types of soldiers with unique abilities.
+It is a Java object-oriented programming (OOP) console application designed to simulate a simple battle between armies consisting of different types of soldiers with unique abilities.
 
 ---
 
