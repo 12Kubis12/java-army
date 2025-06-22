@@ -24,7 +24,7 @@ public abstract class Soldier implements Reportable, Triggerable {
 
     @Override
     public void report() {
-        System.out.print("Soldier " + this.name + " here. Type - ");
+        System.out.print("Soldier " + this.name + " here. Damage -> " + this.damage + ". Type -> ");
         if (this instanceof Offensive && !(this instanceof Defensive)) {
             System.out.print("OFFENSIVE.");
         } else if (this instanceof Defensive && !(this instanceof Offensive)) {
